@@ -1,0 +1,31 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+collections:
+  - name: "exhibitions"
+    label: "전시회 / Exhibitions"
+    folder: "public/exhibitions"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "전시회 이름", name: "title", widget: "string" }
+      - { label: "날짜", name: "date", widget: "date", format: "YYYY-MM-DD" }
+      - { label: "장소", name: "location", widget: "string" }
+      - { label: "국가/도시", name: "city", widget: "string", required: false }
+      - { label: "설명", name: "description", widget: "text", required: false }
+      - label: "사진들"
+        name: "photos"
+        widget: "list"
+        required: false
+        field: { label: "사진", name: "photo", widget: "image" }
+      - label: "영상 링크 (YouTube)"
+        name: "videos"
+        widget: "list"
+        required: false
+        fields:
+          - { label: "영상 제목", name: "title", widget: "string" }
+          - { label: "YouTube URL", name: "url", widget: "string" }
