@@ -202,6 +202,41 @@
     .play-icon{width:52px;height:52px;border-radius:50%;border:2px solid rgba(77,157,224,0.4);display:flex;align-items:center;justify-content:center;}
     .ph-label{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);}
 
+    /* EXHIBITIONS PREVIEW */
+    #exhibitions-preview{
+      padding:100px 60px;position:relative;z-index:1;
+      background:linear-gradient(180deg,var(--dark) 0%,var(--mid) 100%);
+    }
+    .ex-preview-header{max-width:1200px;margin:0 auto 48px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+    .ex-preview-link{
+      font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;
+      letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);
+      text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+      transition:opacity 0.2s;
+    }
+    .ex-preview-link:hover{opacity:0.7;}
+    .ex-preview-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+      gap:20px;max-width:1200px;margin:0 auto;
+    }
+    .ex-preview-card{
+      background:rgba(255,255,255,0.03);border:1px solid rgba(53,90,148,0.25);
+      border-radius:4px;overflow:hidden;text-decoration:none;color:var(--white);
+      transition:border-color 0.25s,transform 0.25s;display:block;
+    }
+    .ex-preview-card:hover{border-color:var(--accent);transform:translateY(-4px);}
+    .ex-preview-thumb{
+      width:100%;aspect-ratio:16/9;object-fit:cover;display:block;
+    }
+    .ex-preview-thumb-placeholder{
+      width:100%;aspect-ratio:16/9;background:rgba(53,90,148,0.12);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .ex-preview-info{padding:20px 24px;}
+    .ex-preview-title{font-family:'Rajdhani',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:6px;}
+    .ex-preview-meta{font-size:0.78rem;color:rgba(255,255,255,0.4);letter-spacing:0.06em;}
+    @media(max-width:900px){#exhibitions-preview{padding:80px 24px;}}
+
     /* WHITEPAPER */
     #whitepaper{
       padding:100px 60px;position:relative;z-index:1;
@@ -379,7 +414,7 @@
 
 <!-- NAV -->
 <nav>
-  <img src="images/logo.jpg" alt="MetroAir Inc."/>
+  <a href="index.html"><img src="images/logo.jpg" alt="MetroAir Inc."/></a>
   <ul>
     <li><a href="#multicruiser">Multicruiser</a></li>
     <li><a href="#fpv">FPV Drone</a></li>
@@ -494,6 +529,24 @@
       <div class="play-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4d9de0" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
       <div class="ph-label">Video 03 — Coming Soon</div>
     </div>
+  </div>
+</section>
+
+<!-- EXHIBITIONS PREVIEW -->
+<section id="exhibitions-preview">
+  <div class="ex-preview-header">
+    <div>
+      <div class="section-label">Global Presence</div>
+      <h2 class="section-title">Exhibitions &<br/>Events</h2>
+      <div class="divider"></div>
+    </div>
+    <a href="exhibitions.html" class="ex-preview-link">
+      View all exhibitions
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+  </div>
+  <div class="ex-preview-grid" id="ex-preview-grid">
+    <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.25);grid-column:1/-1;">Loading...</div>
   </div>
 </section>
 
@@ -688,5 +741,95 @@
 
 <!-- FOOTER -->
 <footer>
-  <img src="images/logo.jpg
-A
+  <a href="index.html"><img src="images/logo.jpg" alt="MetroAir Inc."/></a>
+  <div class="footer-copy">© 2024 MetroAir Inc. All rights reserved.</div>
+  <div class="footer-address">1206 Hyangdong-ro 201, Hyangdong-dong<br/>Deogyang-gu, Goyang-si, Gyeonggi-do 10526, Korea</div>
+</footer>
+
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script>
+  // Exhibitions preview on home page
+  function parseFrontmatterSimple(text) {
+    const match = text.match(/^---\n([\s\S]*?)\n---/);
+    if (!match) return {};
+    const yaml = match[1];
+    const result = {};
+    const lines = yaml.split('\n');
+    let currentKey = null;
+    let inList = false;
+    let listItems = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const kvMatch = line.match(/^([a-zA-Z_]+):\s*(.*)$/);
+      if (kvMatch && !line.startsWith(' ') && !line.startsWith('-')) {
+        if (currentKey && inList) { result[currentKey] = listItems; listItems = []; inList = false; }
+        currentKey = kvMatch[1];
+        const val = kvMatch[2].trim();
+        if (val === '') { inList = true; listItems = []; } else { result[currentKey] = val; inList = false; }
+        continue;
+      }
+      const simpleItem = line.match(/^\s*-\s+(.+)$/);
+      if (simpleItem && inList && !simpleItem[1].match(/^[a-zA-Z_]+:\s*/)) {
+        listItems.push(simpleItem[1].trim().replace(/^['"]|['"]$/g, ''));
+        continue;
+      }
+    }
+    if (currentKey && inList) result[currentKey] = listItems;
+    return result;
+  }
+
+  async function loadExhibitionsPreview() {
+    const grid = document.getElementById('ex-preview-grid');
+    try {
+      const res = await fetch('https://api.github.com/repos/metroaircreator/metroair-website/contents/exhibitions');
+      if (!res.ok) throw new Error();
+      const files = await res.json();
+      const mdFiles = files.filter(f => f.name.endsWith('.md'));
+      if (!mdFiles.length) { grid.innerHTML = ''; return; }
+
+      const exhibitions = [];
+      for (const file of mdFiles) {
+        const r = await fetch(file.download_url);
+        const text = await r.text();
+        const data = parseFrontmatterSimple(text);
+        if (data.title) exhibitions.push(data);
+      }
+      exhibitions.sort((a, b) => (b.date||'').localeCompare(a.date||''));
+
+      grid.innerHTML = exhibitions.map(ex => {
+        const photos = Array.isArray(ex.photos) ? ex.photos : (ex.photos ? [ex.photos] : []);
+        const thumb = photos[0] || '';
+        const dateStr = ex.date ? new Date(ex.date).toLocaleDateString('en-US', {month:'long', year:'numeric'}) : '';
+        return `
+          <a href="exhibitions.html" class="ex-preview-card">
+            ${thumb
+              ? `<img src="${thumb}" alt="${ex.title}" class="ex-preview-thumb" loading="lazy"/>`
+              : `<div class="ex-preview-thumb-placeholder"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(53,90,148,0.4)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`
+            }
+            <div class="ex-preview-info">
+              <div class="ex-preview-title">${ex.title}</div>
+              <div class="ex-preview-meta">${[dateStr, ex.location, ex.city].filter(Boolean).join(' · ')}</div>
+            </div>
+          </a>`;
+      }).join('');
+    } catch(e) {
+      grid.innerHTML = '';
+    }
+  }
+
+  loadExhibitionsPreview();
+
+  // Nav active state on scroll
+  const sections = document.querySelectorAll('section[id], div[id]');
+  const navLinks = document.querySelectorAll('nav ul a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s.id; });
+    navLinks.forEach(a => {
+      a.classList.remove('nav-active');
+      if (a.getAttribute('href') === '#' + current) a.classList.add('nav-active');
+    });
+  });
+</script>
+</body>
+</html>
