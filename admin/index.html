@@ -8,5 +8,33 @@
 </head>
 <body>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    // Enable multi-file upload for photo list fields
+    document.addEventListener('click', function(e) {
+      // When a file input inside the CMS photo list is triggered, allow multiple
+      const input = e.target.closest('input[type="file"]');
+      if (input) {
+        input.setAttribute('multiple', 'multiple');
+      }
+    }, true);
+
+    // Watch for dynamically added file inputs and patch them
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        mutation.addedNodes.forEach(function(node) {
+          if (node.nodeType === 1) {
+            const inputs = node.querySelectorAll ? node.querySelectorAll('input[type="file"]') : [];
+            inputs.forEach(function(input) {
+              input.setAttribute('multiple', 'multiple');
+            });
+            if (node.tagName === 'INPUT' && node.type === 'file') {
+              node.setAttribute('multiple', 'multiple');
+            }
+          }
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  </script>
 </body>
 </html>
