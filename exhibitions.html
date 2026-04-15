@@ -198,18 +198,186 @@
 </footer>
 
 <script>
+  // Parse YAML frontmatter from markdown files
+  function parseFrontmatter(text) {
+    const match = text.match(/^---\n([\s\S]*?)\n---/);
+    if (!match) return {};
+    const yaml = match[1];
+    const result = {};
+    
+    // Parse simple key: value pairs
+    const lines = yaml.split('\n');
+    let currentKey = null;
+    let inList = false;
+    let listItems = [];
+    let inSubList = false;
+    let subObj = {};
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Top-level key: value
+      const kvMatch = line.match(/^([a-zA-Z_]+):\s*(.*)$/);
+      if (kvMatch && !line.startsWith(' ') && !line.startsWith('-')) {
+        // Save previous list
+        if (currentKey && inList) {
+          result[currentKey] = listItems;
+          listItems = [];
+          inList = false;
+        }
+        currentKey = kvMatch[1];
+        const val = kvMatch[2].trim();
+        if (val === '' || val === null) {
+          inList = true;
+          listItems = [];
+        } else {
+          result[currentKey] = val;
+          inList = false;
+        }
+        continue;
+      }
+
+      // List item (simple)
+      const simpleItem = line.match(/^-\s+(.+)$/);
+      if (simpleItem && inList) {
+        const val = simpleItem[1].trim().replace(/^['"]|['"]$/g, '');
+        listItems.push(val);
+        continue;
+      }
+
+      // Sub-object list item  
+      const subKey = line.match(/^  ([a-zA-Z_]+):\s*(.*)$/);
+      if (subKey && inList) {
+        if (line.match(/^- /)) {
+          if (Object.keys(subObj).length) listItems.push(subObj);
+          subObj = {};
+        }
+        subObj[subKey[1]] = subKey[2].trim().replace(/^['"]|['"]$/g, '');
+        continue;
+      }
+
+      // List item that starts with "- " followed by sub-key
+      const listSubStart = line.match(/^- ([a-zA-Z_]+):\s*(.*)$/);
+      if (listSubStart && inList) {
+        if (Object.keys(subObj).length) listItems.push(subObj);
+        subObj = {};
+        subObj[listSubStart[1]] = listSubStart[2].trim().replace(/^['"]|['"]$/g, '');
+        continue;
+      }
+    }
+    // Flush
+    if (currentKey && inList) {
+      if (Object.keys(subObj).length) listItems.push(subObj);
+      result[currentKey] = listItems;
+    }
+    return result;
+  }
+
+  // Fetch all exhibition md files via GitHub API
   async function loadExhibitions() {
     const container = document.getElementById('exhibitions-content');
-    
+    container.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Loading...</div>';
+
     try {
-      // Fetch list of exhibition JSON files from the exhibitions folder
-      const response = await fetch('/exhibitions/');
-      // Decap CMS saves markdown files - we'll use a manifest approach
-      // For now show empty state until content is added via CMS
-      showEmpty(container);
+      // Fetch directory listing from GitHub API
+      const apiUrl = 'https://api.github.com/repos/metroaircreator/metroair-website/contents/exhibitions';
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error('No exhibitions found');
+      
+      const files = await res.json();
+      const mdFiles = files.filter(f => f.name.endsWith('.md'));
+      
+      if (mdFiles.length === 0) {
+        showEmpty(container);
+        return;
+      }
+
+      // Fetch each file
+      const exhibitions = [];
+      for (const file of mdFiles) {
+        const fileRes = await fetch(file.download_url);
+        const text = await fileRes.text();
+        const data = parseFrontmatter(text);
+        if (data.title) exhibitions.push(data);
+      }
+
+      // Sort by date descending
+      exhibitions.sort((a, b) => {
+        const da = a.date || '';
+        const db = b.date || '';
+        return db.localeCompare(da);
+      });
+
+      renderExhibitions(container, exhibitions);
+
     } catch(e) {
+      console.error(e);
       showEmpty(container);
     }
+  }
+
+  function renderExhibitions(container, exhibitions) {
+    // Group by year
+    const byYear = {};
+    exhibitions.forEach(ex => {
+      const year = ex.date ? ex.date.substring(0, 4) : 'TBD';
+      if (!byYear[year]) byYear[year] = [];
+      byYear[year].push(ex);
+    });
+
+    let html = '';
+    Object.keys(byYear).sort((a,b) => b-a).forEach(year => {
+      html += `<div class="exhibition-year">${year}</div>`;
+      byYear[year].forEach((ex, idx) => {
+        const photos = Array.isArray(ex.photos) ? ex.photos : (ex.photos ? [ex.photos] : []);
+        const videos = Array.isArray(ex.videos) ? ex.videos : [];
+        const dateStr = ex.date ? new Date(ex.date).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : '';
+
+        html += `
+        <div class="exhibition-card">
+          <div class="exhibition-card-header" onclick="toggleCard(this)">
+            <div class="ex-meta">
+              <div class="ex-title">${ex.title || 'Untitled'}</div>
+              <div class="ex-info">
+                ${dateStr ? `<div class="ex-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dateStr}</div>` : ''}
+                ${ex.location ? `<div class="ex-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${ex.location}${ex.city ? ', ' + ex.city : ''}</div>` : ''}
+                ${photos.length ? `<div class="ex-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>${photos.length} photo${photos.length>1?'s':''}</div>` : ''}
+              </div>
+            </div>
+            <div class="ex-toggle">View ›</div>
+          </div>
+          <div class="exhibition-card-body" id="card-body-${idx}">
+            ${ex.description ? `<p class="ex-description">${ex.description}</p>` : ''}
+            ${photos.length ? `
+              <div class="photo-grid">
+                ${photos.map(p => `<img src="${p}" alt="${ex.title}" onclick="openLightbox('${p}')" loading="lazy"/>`).join('')}
+              </div>` : ''}
+            ${videos.length ? `
+              <div class="video-list">
+                ${videos.map(v => {
+                  const ytId = (v.url||'').match(/(?:youtu\.be\/|v=)([^&?]+)/)?.[1];
+                  const thumb = ytId ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` : '';
+                  return `<a href="${v.url||v}" target="_blank" rel="noopener" class="video-item">
+                    ${thumb ? `<img src="${thumb}" style="width:80px;height:45px;object-fit:cover;border-radius:2px;flex-shrink:0;" alt=""/>` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="#4d9de0"><polygon points="5 3 19 12 5 21 5 3"/></svg>'}
+                    <div class="video-item-title">${v.title || 'Watch Video'}</div>
+                    <svg style="margin-left:auto;opacity:0.4" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </a>`;
+                }).join('')}
+              </div>` : ''}
+          </div>
+        </div>`;
+      });
+    });
+
+    container.innerHTML = html;
+  }
+
+  function toggleCard(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.ex-toggle');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open');
+    toggle.textContent = isOpen ? 'View ›' : 'Close ✕';
   }
 
   function showEmpty(container) {
@@ -223,8 +391,7 @@
         </svg>
         <h3>전시회 준비 중</h3>
         <p>Exhibitions will appear here once added via the admin panel.</p>
-      </div>
-    `;
+      </div>`;
   }
 
   function openLightbox(src) {
@@ -238,9 +405,7 @@
     document.body.style.overflow = '';
   }
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeLightbox();
-  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
   loadExhibitions();
 </script>
