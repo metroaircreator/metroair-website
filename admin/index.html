@@ -7,6 +7,11 @@
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
+  <div id="bulk-upload-bar" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;">
+    <a href="/admin/bulk-upload.html" style="display:inline-flex;align-items:center;gap:8px;background:#355A94;color:#fff;padding:12px 20px;border-radius:4px;text-decoration:none;font-family:system-ui,sans-serif;font-size:0.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+      📷 Bulk Upload Photos
+    </a>
+  </div>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
     // Enable multi-file upload for photo list fields
@@ -17,6 +22,11 @@
         input.setAttribute('multiple', 'multiple');
       }
     }, true);
+
+    // Show bulk upload button when logged in
+    netlifyIdentity.on('init', u => { if(u) document.getElementById('bulk-upload-bar').style.display='block'; });
+    netlifyIdentity.on('login', () => document.getElementById('bulk-upload-bar').style.display='block');
+    netlifyIdentity.on('logout', () => document.getElementById('bulk-upload-bar').style.display='none');
 
     // Watch for dynamically added file inputs and patch them
     const observer = new MutationObserver(function(mutations) {
