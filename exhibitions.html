@@ -237,9 +237,9 @@
         continue;
       }
 
-      // List item (simple)
-      const simpleItem = line.match(/^-\s+(.+)$/);
-      if (simpleItem && inList) {
+      // List item (simple) - supports indented items like "  - value"
+      const simpleItem = line.match(/^\s*-\s+(.+)$/);
+      if (simpleItem && inList && !simpleItem[1].match(/^[a-zA-Z_]+:\s*/)) {
         const val = simpleItem[1].trim().replace(/^['"]|['"]$/g, '');
         listItems.push(val);
         continue;
