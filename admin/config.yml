@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: metroaircreator/metroair-website
   branch: main
+  base_url: https://metroair-website.pages.dev
+  auth_endpoint: /api/auth
 
 media_folder: "uploads"
 public_folder: "/uploads"

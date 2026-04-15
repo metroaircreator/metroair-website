@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MetroAir Admin</title>
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
   <div id="bulk-upload-bar" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9999;">
@@ -14,29 +13,27 @@
   </div>
   <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
-    // Enable multi-file upload for photo list fields
-    document.addEventListener('click', function(e) {
-      // When a file input inside the CMS photo list is triggered, allow multiple
-      const input = e.target.closest('input[type="file"]');
-      if (input) {
-        input.setAttribute('multiple', 'multiple');
+    // Show bulk upload bar once CMS user is authenticated
+    window.addEventListener('message', function(e) {
+      if (e.data && typeof e.data === 'string' && e.data.includes('authorization:github:success')) {
+        document.getElementById('bulk-upload-bar').style.display = 'block';
       }
-    }, true);
+    });
+    // Also check if already logged in (token in localStorage)
+    (function() {
+      try {
+        const user = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms-user');
+        if (user) document.getElementById('bulk-upload-bar').style.display = 'block';
+      } catch(e) {}
+    })();
 
-    // Show bulk upload button when logged in
-    netlifyIdentity.on('init', u => { if(u) document.getElementById('bulk-upload-bar').style.display='block'; });
-    netlifyIdentity.on('login', () => document.getElementById('bulk-upload-bar').style.display='block');
-    netlifyIdentity.on('logout', () => document.getElementById('bulk-upload-bar').style.display='none');
-
-    // Watch for dynamically added file inputs and patch them
+    // Watch for dynamically added file inputs and allow multiple
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         mutation.addedNodes.forEach(function(node) {
           if (node.nodeType === 1) {
             const inputs = node.querySelectorAll ? node.querySelectorAll('input[type="file"]') : [];
-            inputs.forEach(function(input) {
-              input.setAttribute('multiple', 'multiple');
-            });
+            inputs.forEach(function(input) { input.setAttribute('multiple', 'multiple'); });
             if (node.tagName === 'INPUT' && node.type === 'file') {
               node.setAttribute('multiple', 'multiple');
             }
