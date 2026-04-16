@@ -2,7 +2,7 @@ backend:
   name: github
   repo: metroaircreator/metroair-website
   branch: main
-  base_url: https://metroair-website.pages.dev
+  base_url: https://metroair.kr
   auth_endpoint: /api/auth
 
 media_folder: "uploads"
