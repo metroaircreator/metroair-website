@@ -36,18 +36,23 @@ export async function onRequest(context) {
 function sendResult(status, content) {
   const msg = `authorization:github:${status}:${JSON.stringify(content)}`;
   return new Response(
-    `<!DOCTYPE html><html><body>
-    <p id="s" style="font-family:sans-serif;padding:20px;">Status: ${status} — ${JSON.stringify(content).slice(0,80)}</p>
-    <script>
+    `<!DOCTYPE html><html><body><script>
       (function() {
         var msg = ${JSON.stringify(msg)};
-        document.getElementById('s').textContent = 'Status: ' + msg.slice(0, 120);
-        if (window.opener) {
-          window.opener.postMessage(msg, '*');
-          setTimeout(function(){ window.close(); }, 2000);
+        // Try postMessage first
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage(msg, '*');
+          } catch(e) {}
         }
+        // Also store in localStorage as fallback
+        try {
+          localStorage.setItem('decap-cms-auth', msg);
+          localStorage.setItem('decap-cms-auth-ts', Date.now().toString());
+        } catch(e) {}
+        setTimeout(function(){ window.close(); }, 500);
       })();
-    <\/script></body></html>`,
+    <\/script><p style="font-family:sans-serif;padding:20px;">Authenticating...</p></body></html>`,
     { headers: { 'Content-Type': 'text/html' } }
   );
 }

@@ -27,6 +27,20 @@
       } catch(e) {}
     })();
 
+    // Fallback: listen for auth token stored in localStorage by popup
+    function checkLocalStorageAuth() {
+      try {
+        var msg = localStorage.getItem('decap-cms-auth');
+        var ts = parseInt(localStorage.getItem('decap-cms-auth-ts') || '0');
+        if (msg && Date.now() - ts < 30000) {
+          localStorage.removeItem('decap-cms-auth');
+          localStorage.removeItem('decap-cms-auth-ts');
+          window.dispatchEvent(new MessageEvent('message', { data: msg, origin: window.location.origin }));
+        }
+      } catch(e) {}
+    }
+    setInterval(checkLocalStorageAuth, 500);
+
     // Watch for dynamically added file inputs and allow multiple
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
