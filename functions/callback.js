@@ -36,16 +36,15 @@ export async function onRequest(context) {
 function sendResult(status, content) {
   const msg = `authorization:github:${status}:${JSON.stringify(content)}`;
   return new Response(
-    `<!DOCTYPE html><html><body><script>
+    `<!DOCTYPE html><html><body>
+    <p id="s" style="font-family:sans-serif;padding:20px;">Status: ${status} — ${JSON.stringify(content).slice(0,80)}</p>
+    <script>
       (function() {
-        function send(target) {
-          target.postMessage(${JSON.stringify(msg)}, '*');
-        }
+        var msg = ${JSON.stringify(msg)};
+        document.getElementById('s').textContent = 'Status: ' + msg.slice(0, 120);
         if (window.opener) {
-          send(window.opener);
-          window.close();
-        } else {
-          document.body.innerText = 'Auth complete. You can close this window.';
+          window.opener.postMessage(msg, '*');
+          setTimeout(function(){ window.close(); }, 2000);
         }
       })();
     <\/script></body></html>`,
