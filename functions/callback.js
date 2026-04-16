@@ -39,18 +39,22 @@ function sendResult(status, content) {
     `<!DOCTYPE html><html><body><script>
       (function() {
         var msg = ${JSON.stringify(msg)};
-        // Try postMessage first
+        // 1) postMessage (works if opener not severed by COOP)
         if (window.opener && !window.opener.closed) {
-          try {
-            window.opener.postMessage(msg, '*');
-          } catch(e) {}
+          try { window.opener.postMessage(msg, '*'); } catch(e) {}
         }
-        // Also store in localStorage as fallback
+        // 2) BroadcastChannel (reliable same-origin cross-tab)
+        try {
+          var bc = new BroadcastChannel('decap-cms-auth');
+          bc.postMessage(msg);
+          bc.close();
+        } catch(e) {}
+        // 3) localStorage polling fallback
         try {
           localStorage.setItem('decap-cms-auth', msg);
           localStorage.setItem('decap-cms-auth-ts', Date.now().toString());
         } catch(e) {}
-        setTimeout(function(){ window.close(); }, 500);
+        setTimeout(function(){ window.close(); }, 800);
       })();
     <\/script><p style="font-family:sans-serif;padding:20px;">Authenticating...</p></body></html>`,
     { headers: { 'Content-Type': 'text/html' } }

@@ -27,7 +27,21 @@
       } catch(e) {}
     })();
 
-    // Fallback: listen for auth token stored in localStorage by popup
+    // BroadcastChannel: most reliable cross-tab auth delivery
+    function deliverAuthMsg(msg) {
+      try {
+        // postMessage to self — Decap CMS listens on window 'message'
+        window.postMessage(msg, window.location.origin);
+      } catch(e) {
+        window.dispatchEvent(new MessageEvent('message', { data: msg, origin: window.location.origin }));
+      }
+    }
+    try {
+      var bc = new BroadcastChannel('decap-cms-auth');
+      bc.onmessage = function(e) { if (e.data) deliverAuthMsg(e.data); };
+    } catch(e) {}
+
+    // localStorage polling fallback
     function checkLocalStorageAuth() {
       try {
         var msg = localStorage.getItem('decap-cms-auth');
@@ -35,7 +49,7 @@
         if (msg && Date.now() - ts < 30000) {
           localStorage.removeItem('decap-cms-auth');
           localStorage.removeItem('decap-cms-auth-ts');
-          window.dispatchEvent(new MessageEvent('message', { data: msg, origin: window.location.origin }));
+          deliverAuthMsg(msg);
         }
       } catch(e) {}
     }
