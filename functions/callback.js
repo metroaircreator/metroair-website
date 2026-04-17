@@ -57,6 +57,8 @@ function sendResult(status, content) {
         setTimeout(function(){ window.close(); }, 3000);
       })();
     <\/script><p style="font-family:sans-serif;padding:20px;">Authenticating...</p></body></html>`,
-    { headers: { 'Content-Type': 'text/html' } }
+    { headers: { 
+        'Content-Type': 'text/html',
+        'Cross-Origin-Opener-Policy': 'unsafe-none' } }
   );
 }
