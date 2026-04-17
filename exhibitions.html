@@ -334,11 +334,11 @@
       // Fetch each file
       const exhibitions = [];
       for (const file of mdFiles) {
-        const fileRes = await fetch(file.download_url);
-        const text = await fileRes.text();
-        const data = parseFrontmatter(text);
-        if (data.title) exhibitions.push(data);
-      }
+  const fileRes = await fetch(file.download_url);
+  const text = await fileRes.text();
+  const data = parseFrontmatter(text);
+  if (data.title) exhibitions.push({...data, _filename: file.name});
+}
 
       // Sort by date descending
       exhibitions.sort((a, b) => {
@@ -382,7 +382,9 @@
         <div class="exhibition-card">
           <div class="exhibition-card-header">
             <div class="ex-meta">
-              <div class="ex-title">${ex.title || 'Untitled'}</div>
+             <a href="exhibition.html?slug=${ex._filename}" style="text-decoration:none;color:inherit;display:block;">
+  <div class="ex-title" style="transition:color 0.2s;cursor:pointer;">${ex.title || 'Untitled'}</div>
+</a>
               <div class="ex-info">
                 ${dateStr ? `<div class="ex-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dateStr}</div>` : ''}
                 ${ex.location ? `<div class="ex-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${ex.location}${ex.city ? ', ' + ex.city : ''}</div>` : ''}
