@@ -51,7 +51,7 @@ function sendResult(status, content) {
     '    localStorage.setItem("decap-cms-auth", msg);',
     '    localStorage.setItem("decap-cms-auth-ts", Date.now().toString());',
     '  } catch(e) {}',
-    '  setTimeout(function(){ window.close(); }, 2000);',
+    '  setTimeout(function(){ window.close(); }, 5000);',
     '})();',
     '<' + '/script>',
     '<p style="font-family:sans-serif;padding:20px;">Authenticating...</p>',
