@@ -2,9 +2,8 @@ backend:
   name: github
   repo: metroaircreator/metroair-website
   branch: main
-  base_url: https://metroair-website.pages.dev
-  auth_endpoint: /auth
-
+  auth_type: implicit
+  app_id: Ov23livb5AVKwlSUBInc
 media_folder: "uploads"
 public_folder: "/uploads"
 
