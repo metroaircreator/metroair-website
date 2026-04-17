@@ -41,6 +41,7 @@ function sendResult(status, content) {
       'authorization:github:${status}:${token}',
       e.origin
     );
+    setTimeout(function(){ window.close(); }, 1000);
   }
   window.addEventListener('message', receiveMessage, false);
   window.opener.postMessage('authorizing:github', '*');
