@@ -11,26 +11,10 @@
       📷 Bulk Upload Photos
     </a>
   </div>
-  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   <script>
-    // Show bulk upload bar once CMS user is authenticated
-    window.addEventListener('message', function(e) {
-      if (e.data && typeof e.data === 'string' && e.data.includes('authorization:github:success')) {
-        document.getElementById('bulk-upload-bar').style.display = 'block';
-      }
-    });
-    // Also check if already logged in (token in localStorage)
-    (function() {
-      try {
-        const user = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms-user');
-        if (user) document.getElementById('bulk-upload-bar').style.display = 'block';
-      } catch(e) {}
-    })();
-
-    // BroadcastChannel: most reliable cross-tab auth delivery
+    // BroadcastChannel 먼저 등록 (Decap CMS 로드 전)
     function deliverAuthMsg(msg) {
       try {
-        // postMessage to self — Decap CMS listens on window 'message'
         window.postMessage(msg, window.location.origin);
       } catch(e) {
         window.dispatchEvent(new MessageEvent('message', { data: msg, origin: window.location.origin }));
@@ -40,8 +24,21 @@
       var bc = new BroadcastChannel('decap-cms-auth');
       bc.onmessage = function(e) { if (e.data) deliverAuthMsg(e.data); };
     } catch(e) {}
-
-    // localStorage polling fallback
+  </script>
+  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    // Show bulk upload bar once CMS user is authenticated
+    window.addEventListener('message', function(e) {
+      if (e.data && typeof e.data === 'string' && e.data.includes('authorization:github:success')) {
+        document.getElementById('bulk-upload-bar').style.display = 'block';
+      }
+    });
+    (function() {
+      try {
+        const user = localStorage.getItem('decap-cms-user') || localStorage.getItem('netlify-cms-user');
+        if (user) document.getElementById('bulk-upload-bar').style.display = 'block';
+      } catch(e) {}
+    })();
     function checkLocalStorageAuth() {
       try {
         var msg = localStorage.getItem('decap-cms-auth');
@@ -54,8 +51,6 @@
       } catch(e) {}
     }
     setInterval(checkLocalStorageAuth, 500);
-
-    // Watch for dynamically added file inputs and allow multiple
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
         mutation.addedNodes.forEach(function(node) {
