@@ -80,13 +80,26 @@
       justify-content:space-between;gap:24px;
     }
     .ex-meta{flex:1;}
-    .ex-title{font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:8px;}
+    .ex-title{
+      font-family:'Rajdhani',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:8px;
+      text-decoration:none;color:var(--white);display:block;transition:color 0.2s;
+    }
+    .ex-title:hover{color:var(--accent);}
     .ex-info{display:flex;gap:20px;flex-wrap:wrap;}
     .ex-badge{
       display:inline-flex;align-items:center;gap:6px;
       font-size:0.82rem;color:rgba(255,255,255,0.6);letter-spacing:0.06em;
     }
     .ex-badge svg{opacity:0.7;}
+    .ex-view-link{
+      display:inline-flex;align-items:center;gap:6px;
+      font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;
+      letter-spacing:0.12em;text-transform:uppercase;
+      color:rgba(255,255,255,0.3);text-decoration:none;
+      border:1px solid rgba(53,90,148,0.25);padding:6px 14px;border-radius:2px;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;flex-shrink:0;
+    }
+    .ex-view-link:hover{color:var(--accent);border-color:var(--accent);}
     .exhibition-card-body{
       padding:0 32px 32px;display:block;
     }
@@ -216,7 +229,7 @@
 
 <div id="exhibitions">
   <div id="exhibitions-content">
-    <!-- populated by JS from JSON files -->
+    <!-- populated by JS -->
   </div>
 </div>
 
@@ -237,65 +250,44 @@
 </footer>
 
 <script>
-  // Parse YAML frontmatter from markdown files
   function parseFrontmatter(text) {
     const match = text.match(/^---\n([\s\S]*?)\n---/);
     if (!match) return {};
     const yaml = match[1];
     const result = {};
-    
-    // Parse simple key: value pairs
     const lines = yaml.split('\n');
     let currentKey = null;
     let inList = false;
     let listItems = [];
-    let inSubList = false;
     let subObj = {};
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
-      // Top-level key: value
       const kvMatch = line.match(/^([a-zA-Z_]+):\s*(.*)$/);
       if (kvMatch && !line.startsWith(' ') && !line.startsWith('-')) {
-        // Save previous list
         if (currentKey && inList) {
+          if (Object.keys(subObj).length) { listItems.push(subObj); subObj = {}; }
           result[currentKey] = listItems;
           listItems = [];
           inList = false;
         }
         currentKey = kvMatch[1];
         const val = kvMatch[2].trim();
-        if (val === '' || val === null) {
-          inList = true;
-          listItems = [];
-        } else {
-          result[currentKey] = val;
-          inList = false;
-        }
+        if (val === '' || val === null) { inList = true; listItems = []; }
+        else { result[currentKey] = val; inList = false; }
         continue;
       }
-
-      // List item (simple) - supports indented items like "  - value"
       const simpleItem = line.match(/^\s*-\s+(.+)$/);
       if (simpleItem && inList && !simpleItem[1].match(/^[a-zA-Z_]+:\s*/)) {
         const val = simpleItem[1].trim().replace(/^['"]|['"]$/g, '');
         listItems.push(val);
         continue;
       }
-
-      // Sub-object list item  
       const subKey = line.match(/^  ([a-zA-Z_]+):\s*(.*)$/);
       if (subKey && inList) {
-        if (line.match(/^- /)) {
-          if (Object.keys(subObj).length) listItems.push(subObj);
-          subObj = {};
-        }
         subObj[subKey[1]] = subKey[2].trim().replace(/^['"]|['"]$/g, '');
         continue;
       }
-
-      // List item that starts with "- " followed by sub-key
       const listSubStart = line.match(/^- ([a-zA-Z_]+):\s*(.*)$/);
       if (listSubStart && inList) {
         if (Object.keys(subObj).length) listItems.push(subObj);
@@ -304,7 +296,6 @@
         continue;
       }
     }
-    // Flush
     if (currentKey && inList) {
       if (Object.keys(subObj).length) listItems.push(subObj);
       result[currentKey] = listItems;
@@ -312,35 +303,26 @@
     return result;
   }
 
-  // Fetch all exhibition md files via GitHub API
   async function loadExhibitions() {
     const container = document.getElementById('exhibitions-content');
     container.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,0.3);">Loading...</div>';
 
     try {
-      // Fetch directory listing from GitHub API
       const apiUrl = 'https://api.github.com/repos/metroaircreator/metroair-website/contents/exhibitions';
       const res = await fetch(apiUrl);
       if (!res.ok) throw new Error('No exhibitions found');
-      
       const files = await res.json();
       const mdFiles = files.filter(f => f.name.endsWith('.md'));
-      
-      if (mdFiles.length === 0) {
-        showEmpty(container);
-        return;
-      }
+      if (mdFiles.length === 0) { showEmpty(container); return; }
 
-      // Fetch each file
       const exhibitions = [];
       for (const file of mdFiles) {
-  const fileRes = await fetch(file.download_url);
-  const text = await fileRes.text();
-  const data = parseFrontmatter(text);
-  if (data.title) exhibitions.push({...data, _filename: file.name});
-}
+        const fileRes = await fetch(file.download_url);
+        const text = await fileRes.text();
+        const data = parseFrontmatter(text);
+        if (data.title) exhibitions.push({ ...data, _filename: file.name });
+      }
 
-      // Sort by date descending
       exhibitions.sort((a, b) => {
         const da = a.date || '';
         const db = b.date || '';
@@ -348,7 +330,6 @@
       });
 
       renderExhibitions(container, exhibitions);
-
     } catch(e) {
       console.error(e);
       showEmpty(container);
@@ -356,7 +337,6 @@
   }
 
   function renderExhibitions(container, exhibitions) {
-    // Group by year
     const byYear = {};
     exhibitions.forEach(ex => {
       const year = ex.date ? ex.date.substring(0, 4) : 'TBD';
@@ -373,6 +353,7 @@
         const photos = Array.isArray(ex.photos) ? ex.photos : (ex.photos ? [ex.photos] : []);
         const videos = Array.isArray(ex.videos) ? ex.videos : [];
         const dateStr = ex.date ? new Date(ex.date).toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'}) : '';
+        const detailUrl = `exhibition.html?slug=${encodeURIComponent(ex._filename)}`;
 
         allPhotos[idx] = photos;
         const visiblePhotos = photos.slice(0, 4);
@@ -382,15 +363,17 @@
         <div class="exhibition-card">
           <div class="exhibition-card-header">
             <div class="ex-meta">
-             <a href="exhibition.html?slug=${ex._filename}" style="text-decoration:none;color:inherit;display:block;">
-  <div class="ex-title" style="transition:color 0.2s;cursor:pointer;">${ex.title || 'Untitled'}</div>
-</a>
+              <a href="${detailUrl}" class="ex-title">${ex.title || 'Untitled'}</a>
               <div class="ex-info">
                 ${dateStr ? `<div class="ex-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dateStr}</div>` : ''}
                 ${ex.location ? `<div class="ex-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${ex.location}${ex.city ? ', ' + ex.city : ''}</div>` : ''}
                 ${photos.length ? `<div class="ex-badge"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>${photos.length} photo${photos.length>1?'s':''}</div>` : ''}
               </div>
             </div>
+            <a href="${detailUrl}" class="ex-view-link">
+              View
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
           </div>
           <div class="exhibition-card-body">
             ${ex.description ? `<p class="ex-description">${ex.description}</p>` : ''}
@@ -447,7 +430,7 @@
       </div>`;
   }
 
-  const allPhotos = {}; // exIdx -> photos array
+  const allPhotos = {};
 
   function openLightbox(exIdx, photoIdx) {
     currentExIdx = exIdx;
