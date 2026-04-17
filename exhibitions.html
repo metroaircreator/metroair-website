@@ -376,7 +376,7 @@
             </a>
           </div>
           <div class="exhibition-card-body">
-            ${ex.description ? `<p class="ex-description">${ex.description}</p>` : ''}
+            ${ex.description && ex.description.trim() && ex.description.trim() !== '""' ? `<p class="ex-description">${ex.description}</p>` : ''}
             ${photos.length ? `
               <div class="photo-grid">
                 ${visiblePhotos.map((p, pi) => `<img src="${p}" alt="${ex.title}" onclick="openLightbox(${idx},${pi})" loading="lazy"/>`).join('')}
