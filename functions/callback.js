@@ -35,30 +35,33 @@ export async function onRequest(context) {
 
 function sendResult(status, content) {
   const msg = `authorization:github:${status}:${JSON.stringify(content)}`;
-  return new Response(
-    `<!DOCTYPE html><html><body><script>
-      (function() {
-        var msg = ${JSON.stringify(msg)};
-        // 1) postMessage (works if opener not severed by COOP)
-        if (window.opener && !window.opener.closed) {
-          try { window.opener.postMessage(msg, '*'); } catch(e) {}
-        }
-        // 2) BroadcastChannel (reliable same-origin cross-tab)
-        try {
-          var bc = new BroadcastChannel('decap-cms-auth');
-          bc.postMessage(msg);
-          bc.close();
-        } catch(e) {}
-        // 3) localStorage polling fallback
-        try {
-          localStorage.setItem('decap-cms-auth', msg);
-          localStorage.setItem('decap-cms-auth-ts', Date.now().toString());
-        } catch(e) {}
-        // setTimeout(function(){ window.close(); }, 3000);
-      })();
-    <\/script><p style="font-family:sans-serif;padding:20px;">Authenticating...</p></body></html>`,
-    { headers: { 
-        'Content-Type': 'text/html',
-        'Cross-Origin-Opener-Policy': 'unsafe-none' } }
-  );
+  const html = [
+    '<!DOCTYPE html><html><body><script>',
+    '(function() {',
+    '  var msg = ' + JSON.stringify(msg) + ';',
+    '  if (window.opener && !window.opener.closed) {',
+    '    try { window.opener.postMessage(msg, "*"); } catch(e) {}',
+    '  }',
+    '  try {',
+    '    var bc = new BroadcastChannel("decap-cms-auth");',
+    '    bc.postMessage(msg);',
+    '    bc.close();',
+    '  } catch(e) {}',
+    '  try {',
+    '    localStorage.setItem("decap-cms-auth", msg);',
+    '    localStorage.setItem("decap-cms-auth-ts", Date.now().toString());',
+    '  } catch(e) {}',
+    '  setTimeout(function(){ window.close(); }, 2000);',
+    '})();',
+    '<' + '/script>',
+    '<p style="font-family:sans-serif;padding:20px;">Authenticating...</p>',
+    '</body></html>'
+  ].join('\n');
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html',
+      'Cross-Origin-Opener-Policy': 'unsafe-none'
+    }
+  });
 }
