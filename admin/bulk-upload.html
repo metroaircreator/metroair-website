@@ -122,7 +122,7 @@
   }
 
   function loginWithGitHub() {
-    const w = window.open('/api/auth', 'github-oauth', 'width=600,height=700,left=200,top=100');
+    const w = window.open('/auth', 'github-oauth', 'width=600,height=700,left=200,top=100');
     window.addEventListener('message', function handler(e) {
       if (!e.data || typeof e.data !== 'string') return;
       const match = e.data.match(/^authorization:github:success:(.+)$/);
