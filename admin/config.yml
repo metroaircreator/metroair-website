@@ -14,7 +14,7 @@ collections:
     slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
     fields:
       - { label: "전시회 이름", name: "title", widget: "string" }
-      - { label: "날짜", name: "date", widget: "string", required: false }
+      - { label: "날짜", name: "date", widget: "date", format: "YYYY-MM", date_format: "YYYY-MM", required: false }
       - { label: "장소", name: "location", widget: "string" }
       - { label: "국가/도시", name: "city", widget: "string", required: false }
       - { label: "설명", name: "description", widget: "text", required: false }
