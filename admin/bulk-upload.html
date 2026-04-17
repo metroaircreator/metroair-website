@@ -122,24 +122,29 @@
   }
 
   function loginWithGitHub() {
-    const w = window.open('/auth', 'github-oauth', 'width=600,height=700,left=200,top=100');
-    window.addEventListener('message', function handler(e) {
-      if (!e.data || typeof e.data !== 'string') return;
-      const match = e.data.match(/^authorization:github:success:(.+)$/);
-      if (match) {
-        window.removeEventListener('message', handler);
-        const data = JSON.parse(match[1]);
-        ghToken = data.token;
-        storeToken(ghToken);
-        onLogin();
-      }
-      const errMatch = e.data.match(/^authorization:github:error:(.+)$/);
-      if (errMatch) {
-        window.removeEventListener('message', handler);
-        alert('Login failed. Please try again.');
-      }
-    });
-  }
+  const w = window.open('/auth', 'github-oauth', 'width=600,height=700,left=200,top=100');
+  window.addEventListener('message', function handler(e) {
+    if (!e.data || typeof e.data !== 'string') return;
+    // 핸드셰이크: authorizing 메시지에 응답
+    if (e.data === 'authorizing:github') {
+      w.postMessage('authorizing:github', e.origin);
+      return;
+    }
+    const match = e.data.match(/^authorization:github:success:(.+)$/);
+    if (match) {
+      window.removeEventListener('message', handler);
+      const data = JSON.parse(match[1]);
+      ghToken = data.token;
+      storeToken(ghToken);
+      onLogin();
+    }
+    const errMatch = e.data.match(/^authorization:github:error:(.+)$/);
+    if (errMatch) {
+      window.removeEventListener('message', handler);
+      alert('Login failed. Please try again.');
+    }
+  });
+}
 
   async function onLogin() {
     // Get GitHub user info
